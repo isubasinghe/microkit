@@ -16,6 +16,7 @@ CFLAGS := -std=gnu11 -g -O3 -nostdlib -ffreestanding -mcpu=$(GCC_CPU) -Wall -Wno
 
 PROGS := monitor.elf
 OBJECTS := main.o crt0.o debug.o util.o
+ALLS := main_all.c
 LINKSCRIPT := monitor.ld
 
 $(BUILD_DIR)/%.o : src/%.S
@@ -24,12 +25,15 @@ $(BUILD_DIR)/%.o : src/%.S
 $(BUILD_DIR)/%.o : src/%.s
 	$(TOOLCHAIN)as -g -mcpu=$(GCC_CPU) $< -o $@
 
+$(BUILD_DIR)/%_all.c: src/%.c
+	$(TOOLCHAIN)gcc $(CFLAGS) -E $< > $@
+
 $(BUILD_DIR)/%.o : src/%.c
 	$(TOOLCHAIN)gcc -c $(CFLAGS)  $< -o $@
 
 OBJPROG = $(addprefix $(BUILD_DIR)/, $(PROGS))
 
-all: $(OBJPROG)
+all: $(OBJPROG) $(addprefix $(BUILD_DIR)/, $(ALLS))
 
 $(OBJPROG): $(addprefix $(BUILD_DIR)/, $(OBJECTS)) $(LINKSCRIPT)
 	$(TOOLCHAIN)ld -T$(LINKSCRIPT) $(addprefix $(BUILD_DIR)/, $(OBJECTS)) -o $@

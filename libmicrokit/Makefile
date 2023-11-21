@@ -17,6 +17,7 @@ CFLAGS := -std=gnu11 -g -O3 -nostdlib -ffreestanding -mcpu=$(GCC_CPU) -Wall -Wno
 LIBS := libmicrokit.a
 OBJS := main.o dbg.o
 OTHER_OBJS :=  crt0.o
+ALLS := main_all.c
 
 $(BUILD_DIR)/%.o : src/%.S
 	$(TOOLCHAIN)gcc -x assembler-with-cpp -c -g  -mcpu=$(GCC_CPU)  $< -o $@
@@ -24,12 +25,15 @@ $(BUILD_DIR)/%.o : src/%.S
 $(BUILD_DIR)/%.o : src/%.s
 	$(TOOLCHAIN)as -g -mcpu=$(GCC_CPU) $< -o $@
 
+$(BUILD_DIR)/%_all.c: src/%.c
+	$(TOOLCHAIN)gcc $(CFLAGS) -E $< > $@
+
 $(BUILD_DIR)/%.o : src/%.c
 	$(TOOLCHAIN)gcc -c $(CFLAGS) $< -o $@
 
 LIB = $(addprefix $(BUILD_DIR)/, $(LIBS))
 
-all: $(LIB) $(addprefix $(BUILD_DIR)/, $(OTHER_OBJS))
+all: $(LIB) $(addprefix $(BUILD_DIR)/, $(OTHER_OBJS)) $(addprefix $(BUILD_DIR)/, $(ALLS))
 
 $(LIB): $(addprefix $(BUILD_DIR)/, $(OBJS))
 	$(TOOLCHAIN)ar -rv $@ $^
