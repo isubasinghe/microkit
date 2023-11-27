@@ -249,25 +249,30 @@ static void check_untypeds_match(seL4_BootInfo *bi)
 {
     /* Check that untypeds list generate from build matches the kernel */
     if (untyped_info.cap_start != bi->untyped.start) {
+#if defined(CONFIG_PRINTING)
         puts("MON|ERROR: cap start mismatch. Expected cap start: ");
         puthex32(untyped_info.cap_start);
         puts("  boot info cap start: ");
         puthex32(bi->untyped.start);
         puts("\n");
+#endif
         fail("cap start mismatch");
     }
 
     if (untyped_info.cap_end != bi->untyped.end) {
+#if defined(CONFIG_PRINTING)
         puts("MON|ERROR: cap end mismatch. Expected cap end: ");
         puthex32(untyped_info.cap_end);
         puts("  boot info cap end: ");
         puthex32(bi->untyped.end);
         puts("\n");
+#endif
         fail("cap end mismatch");
     }
 
     for (unsigned i = 0; i < untyped_info.cap_end - untyped_info.cap_start; i++) {
         if (untyped_info.regions[i].paddr != bi->untypedList[i].paddr) {
+#if defined(CONFIG_PRINTING)
             puts("MON|ERROR: paddr mismatch for untyped region: ");
             puthex32(i);
             puts("  expected paddr: ");
@@ -275,9 +280,11 @@ static void check_untypeds_match(seL4_BootInfo *bi)
             puts("  boot info paddr: ");
             puthex64(bi->untypedList[i].paddr);
             puts("\n");
+#endif
             fail("paddr mismatch");
         }
         if (untyped_info.regions[i].size_bits != bi->untypedList[i].sizeBits) {
+#if defined(CONFIG_PRINTING)
             puts("MON|ERROR: size_bits mismatch for untyped region: ");
             puthex32(i);
             puts("  expected size_bits: ");
@@ -285,9 +292,11 @@ static void check_untypeds_match(seL4_BootInfo *bi)
             puts("  boot info size_bits: ");
             puthex32(bi->untypedList[i].sizeBits);
             puts("\n");
+#endif
             fail("size_bits mismatch");
         }
         if (untyped_info.regions[i].is_device != bi->untypedList[i].isDevice) {
+#if defined(CONFIG_PRINTING)
             puts("MON|ERROR: is_device mismatch for untyped region: ");
             puthex32(i);
             puts("  expected is_device: ");
@@ -295,6 +304,7 @@ static void check_untypeds_match(seL4_BootInfo *bi)
             puts("  boot info is_device: ");
             puthex32(bi->untypedList[i].isDevice);
             puts("\n");
+#endif
             fail("is_device mismatch");
         }
     }
@@ -407,6 +417,7 @@ static unsigned perform_invocation(seL4_Word *invocation_data, unsigned offset, 
         out_tag = seL4_CallWithMRs(call_service, tag, &mr0, &mr1, &mr2, &mr3);
         result = (seL4_Error) seL4_MessageInfo_get_label(out_tag);
         if (result != seL4_NoError) {
+#if defined(CONFIG_PRINTING)
             puts("ERROR: ");
             puthex64(result);
             puts(" ");
@@ -416,6 +427,7 @@ static unsigned perform_invocation(seL4_Word *invocation_data, unsigned offset, 
             puts(".");
             puthex32(i);
             puts("\n");
+#endif
             fail("invocation error");
         }
 #if 0
@@ -441,6 +453,7 @@ static void monitor(void)
 
         seL4_Word tcb_cap = tcbs[badge];
 
+#if defined(CONFIG_PRINTING)
         puts("received message ");
         puthex32(label);
         puts("  badge: ");
@@ -448,24 +461,30 @@ static void monitor(void)
         puts("  tcb cap: ");
         puthex64(tcb_cap);
         puts("\n");
+#endif
 
         if (label == seL4_Fault_NullFault && badge < MAX_PDS) {
             /* This is a request from our PD to become passive */
             err = seL4_SchedContext_UnbindObject(scheduling_contexts[badge], tcb_cap);
             err = seL4_SchedContext_Bind(scheduling_contexts[badge], notification_caps[badge]);
+#if defined(CONFIG_PRINTING)
             if (err != seL4_NoError) {
+
                 puts("error binding scheduling context to notification");
             } else {
                 puts(pd_names[badge]);
                 puts(" is now passive!\n");
+#endif
             }
             continue;
         }
 
         if (badge < MAX_PDS && pd_names[badge][0] != 0) {
+#if defined(CONFIG_PRINTING)
             puts("faulting PD: ");
             puts(pd_names[badge]);
             puts("\n");
+#endif
         } else {
             fail("unknown/invalid badge\n");
         }
@@ -476,7 +495,7 @@ static void monitor(void)
         if (err != seL4_NoError) {
             fail("error reading registers");
         }
-
+#if defined(CONFIG_PRINTING)
         // FIXME: Would be good to print the whole register set
         puts("Registers: \n");
         puts("pc : ");
@@ -509,9 +528,10 @@ static void monitor(void)
         puts("x7 : ");
         puthex64(regs.x7);
         puts("\n");
-
+#endif
         switch (label) {
         case seL4_Fault_CapFault: {
+#if defined(CONFIG_PRINTING)
             seL4_Word ip = seL4_GetMR(seL4_CapFault_IP);
             seL4_Word fault_addr = seL4_GetMR(seL4_CapFault_Addr);
             seL4_Word in_recv_phase = seL4_GetMR(seL4_CapFault_InRecvPhase);
@@ -567,13 +587,17 @@ static void monitor(void)
                 puthex64(guard_bits_found);
             }
             puts("\n");
+#endif
             break;
         }
         case seL4_Fault_UserException: {
+#if defined(CONFIG_PRINTING)
             puts("UserException\n");
+#endif
             break;
         }
         case seL4_Fault_VMFault: {
+#if defined(CONFIG_PRINTING)
             seL4_Word ip = seL4_GetMR(seL4_VMFault_IP);
             seL4_Word fault_addr = seL4_GetMR(seL4_VMFault_Addr);
             seL4_Word is_instruction = seL4_GetMR(seL4_VMFault_PrefetchFault);
@@ -631,6 +655,7 @@ static void monitor(void)
 
             break;
         }
+#endif
         default:
             puts("Unknown fault\n");
             break;
@@ -641,7 +666,9 @@ static void monitor(void)
 void main(seL4_BootInfo *bi)
 {
     __sel4_ipc_buffer = bi->ipcBuffer;
+#if defined(CONFIG_PRINTING)
     puts("MON|INFO: Microkit Bootstrap\n");
+#endif
 
 #if 0
     /* This can be useful to enable during new platform bring up
@@ -651,7 +678,7 @@ void main(seL4_BootInfo *bi)
 #endif
 
     check_untypeds_match(bi);
-
+#if defined(CONFIG_PRINTING)
     puts("MON|INFO: Number of bootstrap invocations: ");
     puthex32(bootstrap_invocation_count);
     puts("\n");
@@ -659,19 +686,23 @@ void main(seL4_BootInfo *bi)
     puts("MON|INFO: Number of system invocations:    ");
     puthex32(system_invocation_count);
     puts("\n");
+#endif
 
     unsigned offset = 0;
     for (unsigned idx = 0; idx < bootstrap_invocation_count; idx++) {
         offset = perform_invocation(bootstrap_invocation_data, offset, idx);
     }
+#if defined(CONFIG_PRINTING)
     puts("MON|INFO: completed bootstrap invocations\n");
+#endif
 
     offset = 0;
     for (unsigned idx = 0; idx < system_invocation_count; idx++) {
         offset = perform_invocation(system_invocation_data, offset, idx);
     }
-
+#if defined(CONFIG_PRINTING)
     puts("MON|INFO: completed system invocations\n");
+#endif
 
     monitor();
 }
